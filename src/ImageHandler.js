@@ -7,7 +7,7 @@ const { spawnSync } = require('child_process')
 const settings = require('./helpers/settings')
 const ImageRequest = require('./ImageRequest')
 const imageOps = require('./image-ops')
-const UnhadleableImageException = require('./errors/UnhadleableImageException')
+const UnhandleableImageException = require('./errors/UnhandleableImageException')
 
 class ImageHandler {
   /**
@@ -45,7 +45,7 @@ class ImageHandler {
         bufferImage = await pipeline.toBuffer()
         format = pipeline.options.formatOut
       } catch (err) {
-        throw new UnhadleableImageException('Unhandlable image encountered: ' + err.message)
+        throw new UnhandleableImageException('Unhandlable image encountered: ' + err.message)
       }
     } else {
       // No edits, just return the original
