@@ -1,4 +1,4 @@
-module.exports = class ImageDownloadException extends Error {
+export class ImageDownloadException extends Error {
   constructor (status, message) {
     super()
     this.name = 'ImageDownloadException'

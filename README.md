@@ -1,3 +1,14 @@
+# Bright-specific documentation
+
+This is a forked repository. The original uses an unsupported version of Node. Our newer version of Node means a newer version of Serverless, which means some slightly different instructions for deployment:
+
+1. `npm ci`
+2. `cp settings.example.yml settings.yml`
+3. Configure settings.yml file
+4. Configure the service name in serverless.yml (this is no longer configurable in the settings.yml file) 
+5. Ensure you have AWS CLI configured on your machine with a role that has permission to create all the infrastructure required to deploy the lambda (likely an admin role).
+6. Run `sls deploy --aws-profile=ROLE_WITH_SUFFICIENT_PERMISSIONS --stage=STAGE_FROM_SETTINGS_TO_DEPLOY --param='settings=settings.yml'`
+
 # Serverless Sharp Image Processor
 A solution to dynamically optimize and transform images on the fly, utilizing [Sharp](https://sharp.pixelplumbing.com/en/stable/) and AWS Lambda.
 

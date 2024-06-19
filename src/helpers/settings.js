@@ -1,4 +1,4 @@
-const SettingsException = require('../errors/SettingsException')
+import { SettingsException } from '../errors/SettingsException.js'
 
 const TYPE_INTEGER = 'integer'
 const TYPE_ARRAY_STRING = 'arraystring'
@@ -57,7 +57,7 @@ const settings = {
  * @param key
  * @return {string|null}
  */
-exports.getSetting = function (key) {
+export const getSetting = function (key) {
   if (!(key in settings)) {
     throw new SettingsException()
   }

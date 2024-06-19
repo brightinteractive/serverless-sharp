@@ -1,8 +1,8 @@
-service: ${self:custom.settings.serviceName}
+#service: "SET THIS TO YOUR LAMBDA SERVICE NAME"
 
 provider:
   name: aws
-  runtime: nodejs14.x
+  runtime: nodejs20.x
   timeout: 10
   stage: ${opt:stage,'dev'}
   region: ${self:custom.settings.region}
@@ -26,7 +26,7 @@ layers:
         - node_modules/**
     description: sharp@0.27.2
     compatibleRuntimes:
-      - nodejs14.x
+      - nodejs20.x
     licenseInfo: Apache License 2.0
     retain: false
 
@@ -111,5 +111,5 @@ functions:
     environment: ${self:custom.settings.environment}
 custom:
   empty: ''
-  settingsFilePath: ${opt:settings,'./settings.yml'}
+  settingsFilePath: ${param:settings,'./settings.yml'}
   settings: ${file(${self:custom.settingsFilePath}):stages.${self:provider.stage}}
