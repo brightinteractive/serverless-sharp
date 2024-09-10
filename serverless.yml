@@ -94,6 +94,7 @@ functions:
           method: get
           contentHandling: CONVERT_TO_BINARY
     environment: ${self:custom.settings.environment}
+    memorySize: 2048
 Outputs:
   CloudFrontDistributionOutput:
     Value:
