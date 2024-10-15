@@ -47,7 +47,7 @@ const alignmentToGravity = new Map([
 exports.beforeApply = async function (image, edits) {
   const { blendalign, blendalpha } = edits
 
-  const alignment = blendAlign.processedValue.replace(/ /g, "")
+  const alignment = blendalign.processedValue.replace(/ /g, "")
   if (alignment) {
     const gravity = alignmentToGravity.get(alignment)
     blendalign.processedValue = gravity ? gravity : "centre"
