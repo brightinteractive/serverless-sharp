@@ -25,7 +25,7 @@ exports.blend = async (image, url, gravity, alpha) => {
   let inputImage = {input: compositeInput, tile: false, gravity: gravity}
 
   if (alpha >= 0) {
-    colour = {r: 10, g: 10, b: 10, a: alpha}
+    const colour = {r: 10, g: 10, b: 10, a: alpha}
     inputImage = {...inputImage, create: {background: colour}}
   }
 
