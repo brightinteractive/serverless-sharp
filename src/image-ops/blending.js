@@ -32,49 +32,31 @@ exports.blend = async (image, url, gravity, alpha) => {
   image.composite([inputImage])
 }
 
+const alignmentToGravity = new Map([
+  ["center", "centre"], ["middle", "centre"], ["center,middle", "centre"], ["middle,center", "centre"],
+  ["left", "west"], ["left,middle", "west"], ["middle,left", "west"],
+  ["right", "east"], ["right,middle", "east"], ["middle,right", "east"],
+  ["top", "north"], ["top,middle", "north"], ["middle,top", "north"],
+  ["top,left", "northwest"], ["left,top", "northwest"],
+  ["top,right", "northeast"], ["right,top", "northeast"],
+  ["bottom", "south"], ["bottom,middle", "south"], ["middle,bottom", "south"],
+  ["bottom,left", "southwest"], ["left,bottom", "southwest"],
+  ["bottom,right", "southeast"], ["right,bottom", "southeast"],
+])
+
 exports.beforeApply = async function (image, edits) {
   const { blendalign, blendalpha } = edits
 
-  const alignment = blendAlign.processedValue
+  const alignment = blendAlign.processedValue.replace(/ /g, "")
   if (alignment) {
-    switch (alignment) {
-      case 'center,middle' || 'middle,center':
-        blendalign.processedValue = 'centre'
-        break
-      case 'left,middle' || 'middle,left':
-        blendalign.processedValue = 'west'
-        break
-      case 'right,middle' || 'middle,right':
-        blendalign.processedValue = 'east'
-        break
-      case 'top,middle' || 'middle,top':
-        blendalign.processedValue = 'north'
-        break
-      case 'top,left' || 'left,top':
-        blendalign.processedValue = 'northwest'
-        break
-      case 'top,right' || 'right,top':
-        blendalign.processedValue = 'northeast'
-        break
-      case 'bottom,middle' || 'middle,bottom':
-        blendalign.processedValue = 'south'
-        break
-      case 'bottom,left' || 'left,bottom':
-        blendalign.processedValue = 'southwest'
-        break
-      case 'bottom,right' || 'right,bottom':
-        blendalign.processedValue = 'southeast'
-        break
-      default:
-        blendalign.processedValue = 'centre'
-        console.error('Invalid blending alignment: ' + alignment)
-    }
+    const gravity = alignmentToGravity.get(alignment)
+    blendalign.processedValue = gravity ? gravity : "centre"
+  }
 
-    if (blendalpha.processedValue) {
-      const alphaAsDecimal = parseFloat(blendalpha.processedValue) / 100
-      blendalpha.processedValue = alphaAsDecimal
-    } else {
-      blendalpha.processedValue = -1
-    }
+  if (blendalpha.processedValue) {
+    const alphaAsDecimal = parseFloat(blendalpha.processedValue) / 100
+    blendalpha.processedValue = alphaAsDecimal
+  } else {
+    blendalpha.processedValue = -1
   }
 }
