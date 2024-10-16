@@ -1,11 +1,16 @@
 const axios = require('axios')
+const sharp = require('sharp')
 
 exports.apply = async (image, edits) => {
   await this.beforeApply(image, edits)
-  const { blend, blendalign, blendalpha } = edits
+  const { blend } = edits
+  const blendalign = edits["blend-align"]
+  const blendalpha = edits["blend-alpha"]
+  const blendwidth = edits["blend-w"]
+  const blendheight = edits["blend-h"]
 
   if (blend.processedValue) {
-    await this.blend(image, blend.processedValue, blendalign.processedValue, blendalpha.processedValue)
+    await this.blend(image, blend.processedValue, blendalign.processedValue, blendalpha.processedValue, blendwidth.processedValue, blendheight.processedValue)
   }
 }
 
@@ -15,21 +20,31 @@ exports.apply = async (image, edits) => {
  * @param {String} url
  * @param {String} gravity
  * @param {number} alpha
+ * @param {number} width
+ * @param {number} height
  **/
-exports.blend = async (image, url, gravity, alpha) => {
-  const compositeInput = (await axios({
+exports.blend = async (image, url, gravity, alpha, width, height) => {
+  let compositeImage = (await axios({
     url: url,
     responseType: "arraybuffer"
   })).data;
 
-  let inputImage = {input: compositeInput, tile: false, gravity: gravity}
-
   if (alpha >= 0) {
-    const colour = {r: 10, g: 10, b: 10, a: alpha}
-    inputImage = {...inputImage, create: {background: colour}}
+    compositeImage = await sharp(compositeImage).composite(
+        [{
+          input: Buffer.from([0,0,0,Math.round(alpha*256)]),
+          raw: {
+            width: 1,
+            height: 1,
+            channels: 4,
+          },
+          tile: true,
+          blend: 'dest-in',
+        }]
+    ).toBuffer()
   }
 
-  image.composite([inputImage])
+  image.composite([{input: compositeImage, tile: false, gravity: gravity}])
 }
 
 const alignmentToGravity = new Map([
@@ -45,9 +60,10 @@ const alignmentToGravity = new Map([
 ])
 
 exports.beforeApply = async function (image, edits) {
-  const { blendalign, blendalpha } = edits
+  const blendalign = edits["blend-align"]
+  const blendalpha = edits["blend-alpha"]
 
-  const alignment = blendalign.processedValue.replace(/ /g, "")
+  const alignment = blendalign.processedValue.join(",")
   if (alignment) {
     const gravity = alignmentToGravity.get(alignment)
     blendalign.processedValue = gravity ? gravity : "centre"
