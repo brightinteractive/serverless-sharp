@@ -110,10 +110,6 @@ functions:
             contentHandling: CONVERT_TO_BINARY
     environment: ${self:custom.settings.environment}
     memorySize: 2048
-Outputs:
-  CloudFrontDistributionOutput:
-    Value:
-      'Fn::GetAtt': [ CloudFrontDistribution, DomainName ]
 custom:
   empty: ''
   settingsFilePath: ${param:settings,'./settings.yml'}
