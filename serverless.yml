@@ -109,6 +109,7 @@ functions:
           response:
             contentHandling: CONVERT_TO_BINARY
     environment: ${self:custom.settings.environment}
+    memorySize: 2048
 custom:
   empty: ''
   settingsFilePath: ${param:settings,'./settings.yml'}
