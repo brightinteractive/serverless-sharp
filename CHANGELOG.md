@@ -1,8 +1,33 @@
 # Changelog
-All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [2.1.1] - 2021-03-31
+### Changed
+- Updated to Sharp 0.28.0
+
+## [2.1.0] - 2021-03-24
+
+### Added
+- Adds ACM_CERTIFICATE_ARN configuration variable (@tyrauber)
+
+### Changed
+- ImageRequest exceptions now throw S3Exception instead of generic Error (@marco-primiceri)
+- No longer require serverless-apiw-binary and serverless-apigwy-binary (@tyrauber)
+- Responses now include a Last-Modified header with the generation time for an image (@tyrauber)
+- Security hash is no longer case-sensitive
+- Index function now always returns a response to support middleware applications (@tyrauber)
+- Lambda timeout increased from default (6 seconds) to 10 seconds
+- Improve CI workflow (@dashmug)
+- Update to Sharp 0.27.2
+- Update Lambda runtime to Node 14
+- Removed Serverless Offline plugin due to lack of Node 14 compatibility
+
+### Fixed
+- Fix potential issue processing font expectations (@tyrauber)
+- Properly capture S3 exceptions (@marco-primiceri)
+- pngquant was not working properly
+- fit=max was not working properly (@kylecotter)
+- Fix config for custom CloudFormation Outputs. (@dashmug)
+- Don't process SVGs in format=auto (@kylecotter)
 
 ## [2.0.6] - 2020-05-13
 

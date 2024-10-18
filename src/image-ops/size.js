@@ -2,10 +2,9 @@
  * This file should be restricted to dimensional size alterations to the image
  */
 
-const sharp = require('sharp')
-const schema = require('../../data/schema')
-
-const NotImplementedException = require('../errors/NotImplementedException')
+import Sharp from 'sharp'
+import { schema } from '../../data/schema.js'
+import { NotImplementedException } from '../errors/NotImplementedException.js'
 
 /**
  * Apply all supported size operations
@@ -13,8 +12,8 @@ const NotImplementedException = require('../errors/NotImplementedException')
  * @param edits
  * @return {Promise<void>}
  */
-exports.apply = async (image, edits) => {
-  await this.beforeApply(image, edits)
+export const apply = async (image, edits) => {
+  await beforeApply(image, edits)
 
   const { w, h, fit, crop } = edits
   // The first thing we need to do is apply edits that affect the requested output size.
@@ -32,22 +31,22 @@ exports.apply = async (image, edits) => {
         // Should be partially possible in Sharp. Just not a priority
         throw new NotImplementedException()
       case 'max':
-        this.scaleClip(image, w.processedValue, h.processedValue, false)
+        scaleMax(image, w.processedValue, h.processedValue)
         break
       case 'min':
-        await this.scaleCrop(image, w.processedValue, h.processedValue, crop.processedValue, edits['fp-x'].processedValue, edits['fp-y'].processedValue, false)
+        await scaleCrop(image, w.processedValue, h.processedValue, crop.processedValue, edits['fp-x'].processedValue, edits['fp-y'].processedValue)
         break
       case 'fill':
-        await this.fill(image, edits.fill.processedValue, w.processedValue, h.processedValue, edits['fill-color'].processedValue)
+        await fill(image, edits.fill.processedValue, w.processedValue, h.processedValue, edits['fill-color'].processedValue)
         break
       case 'scale':
-        this.scale(image, w.processedValue, h.processedValue)
+        scale(image, w.processedValue, h.processedValue)
         break
       case 'crop':
-        await this.scaleCrop(image, w.processedValue, h.processedValue, crop.processedValue, edits['fp-x'].processedValue, edits['fp-y'].processedValue, true)
+        await scaleCrop(image, w.processedValue, h.processedValue, crop.processedValue, edits['fp-x'].processedValue, edits['fp-y'].processedValue)
         break
       case 'clip':
-        this.scaleClip(image, w.processedValue, h.processedValue, true)
+        scaleClip(image, w.processedValue, h.processedValue)
         break
     }
   }
@@ -59,12 +58,12 @@ exports.apply = async (image, edits) => {
 * @param height
 * @returns {*}
 */
-exports.scaleMax = (image, width = null, height = null) => {
+export const scaleMax = (image, width = null, height = null) => {
   image.resize({
     width,
     height,
     withoutEnlargement: true,
-    fit: sharp.fit.inside
+    fit: Sharp.fit.inside
   })
 }
 
@@ -75,12 +74,12 @@ exports.scaleMax = (image, width = null, height = null) => {
  * @param height
  * @returns {*}
  */
-exports.scaleClip = (image, width = null, height = null) => {
+export const scaleClip = (image, width = null, height = null) => {
   image.resize({
     width,
     height,
     withoutEnlargement: false,
-    fit: sharp.fit.inside
+    fit: Sharp.fit.inside
   })
 }
 
@@ -92,10 +91,10 @@ exports.scaleClip = (image, width = null, height = null) => {
  * @param color
  * @returns {*}
  */
-exports.fill = async (image, mode, width = null, height = null, color = null) => {
+export const fill = async (image, mode, width = null, height = null, color = null) => {
   const resizeParams = {
     withoutEnlargement: false,
-    fit: sharp.fit.contain
+    fit: Sharp.fit.contain
   }
   if (width) {
     resizeParams.width = width
@@ -146,12 +145,12 @@ exports.fill = async (image, mode, width = null, height = null, color = null) =>
  * @param height
  * @returns {*}
  */
-exports.scale = (image, width, height) => {
+export const scale = (image, width, height) => {
   image.resize({
     width,
     height,
     withoutEnlargement: true,
-    fit: sharp.fit.fill
+    fit: Sharp.fit.fill
   })
 }
 
@@ -165,7 +164,7 @@ exports.scale = (image, width, height) => {
  * @param fpy
  * @returns {*}
  */
-exports.scaleCrop = async (image, width = null, height = null, crop = null, fpx = null, fpy = null) => {
+export const scaleCrop = async (image, width = null, height = null, crop = null, fpx = null, fpy = null) => {
   // top, bottom, left, right, faces, focalpoint, edges, and entropy
   // TODO: This should happen in the schemaParser
   if (!Array.isArray(crop)) {
@@ -178,8 +177,8 @@ exports.scaleCrop = async (image, width = null, height = null, crop = null, fpx 
       width,
       height,
       withoutEnlargement: false,
-      fit: sharp.fit.cover,
-      position: sharp.strategy.entropy
+      fit: Sharp.fit.cover,
+      position: Sharp.strategy.entropy
     })
     return
   }
@@ -253,7 +252,7 @@ exports.scaleCrop = async (image, width = null, height = null, crop = null, fpx 
     width: newWidth,
     height: newHeight,
     withoutEnlargement: false,
-    fit: sharp.fit.fill
+    fit: Sharp.fit.fill
   }).extract({
     left: fpxLeft,
     top: fpyTop,
@@ -267,7 +266,7 @@ exports.scaleCrop = async (image, width = null, height = null, crop = null, fpx 
  * @param image
  * @param edits
  */
-exports.beforeApply = async function (image, edits) {
+export const beforeApply = async function (image, edits) {
   const { w, h, dpr, ar } = edits
 
   // Apply aspect ratio edits

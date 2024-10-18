@@ -1,6 +1,7 @@
 /* eslint-env jest */
-const schemaParser = require('./schemaParser')
-const ExpectationTypeException = require('../errors/ExpectationTypeException')
+import * as schemaParser from './schemaParser.js'
+
+import { ExpectationTypeException } from '../errors/ExpectationTypeException.js'
 
 test('replaceAliases - compare objects', () => {
   const replaced = schemaParser.replaceAliases({

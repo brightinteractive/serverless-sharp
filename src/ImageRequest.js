@@ -1,12 +1,15 @@
-const eventParser = require('./helpers/eventParser')
-const schemaParser = require('./helpers/schemaParser')
-const security = require('./helpers/security')
-const sharp = require('sharp')
-const HashException = require('./errors/HashException')
-const settings = require('./helpers/settings')
-const S3Exception = require('./errors/S3Exception')
+import * as eventParser from './helpers/eventParser.js'
+import * as schemaParser from './helpers/schemaParser.js'
+import * as security from './helpers/security.js'
+import Sharp from 'sharp'
+import { HashException } from './errors/HashException.js'
+import * as settings from './helpers/settings.js'
+import { S3Exception } from './errors/S3Exception.js'
+import { ImageDownloadException } from './errors/ImageDownloadException.js'
+import * as https from 'https'
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3'
 
-class ImageRequest {
+export class ImageRequest {
   constructor (event) {
     this.event = event
     // If the hash isn't set when it should be, we'll throw an error.
@@ -25,13 +28,16 @@ class ImageRequest {
    * @return {Promise<void>}
    */
   async process () {
-    this.originalImageObject = await this.getOriginalImage()
-    this.originalImageBody = this.originalImageObject.Body
-
     let qp = this._parseQueryParams()
-    qp = await this._inferOutputFormatQp(qp)
 
+    this.sourceUrl = qp.source || undefined
     this.destUrl = qp.dest || undefined
+
+    this.originalImageObject = await this.getOriginalImage(this.sourceUrl)
+    this.originalImageBody = this.originalImageObject.Body
+    this.originalImageSize = this.originalImageObject.ContentLength
+
+    qp = await this._inferOutputFormatQp(qp)
 
     this.schema = schemaParser.getSchemaForQueryParams(qp)
     this.edits = schemaParser.normalizeAndValidateSchema(this.schema, qp)
@@ -39,19 +45,59 @@ class ImageRequest {
   }
 
   /**
-   * Gets the original image from an Amazon S3 bucket.
-   * @param {String} bucket - The name of the bucket containing the image.
-   * @param {String} key - The key name corresponding to the image.
+   * Gets the original image either from an Amazon S3 bucket or a signed S3 URL.
+   * @param {String} sourceUrl - The original image URL (if any).
    * @return {Promise} - The original image or an error.
    */
-  async getOriginalImage () {
-    const S3 = require('aws-sdk/clients/s3')
-    const s3 = new S3()
-    const imageLocation = { Bucket: this.bucket, Key: decodeURIComponent(this.key) }
-    const request = s3.getObject(imageLocation).promise()
+  async getOriginalImage (sourceUrl) {
+    if (sourceUrl) {
+      return this.getOriginalImageFromUrl(sourceUrl)
+    } else {
+      return this.getOriginalImageFromS3()
+    }
+  }
+
+  async getOriginalImageFromUrl(sourceUrl) {
+    return new Promise((resolve, reject) => {
+      const request = https.get(new URL(sourceUrl), (res) => {
+        let contentBuffer = []
+        let totalBytesInBuffer = 0
+        res.on('data', (chunk) => {
+          contentBuffer.push(chunk)
+          totalBytesInBuffer += chunk.length
+        });
+        res.on('end', () => {
+          if(res.statusCode === 200) {
+            resolve({
+              Body: Buffer.concat(contentBuffer, totalBytesInBuffer),
+              ContentType: res.headers["content-type"],
+              CacheControl: res.headers["cache-control"]
+            })
+          } else {
+            reject(new ImageDownloadException(res.statusCode, res.statusMessage))
+          }
+        })
+      })
+      request.on('error', function (e) {
+        console.error('Error while downloading source image: ' + e.message);
+        reject(e);
+      });
+      request.end();
+    })
+  }
+
+  async getOriginalImageFromS3() {
+    const s3 = new S3Client()
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: decodeURIComponent(this.key)
+    })
     try {
-      const originalImage = await request
-      return Promise.resolve(originalImage)
+      const response = await s3.send(command)
+      return {
+        ...response,
+        Body: await response.Body.transformToByteArray()
+      }
     } catch (err) {
       const error = new S3Exception(err.statusCode, err.code, err.message)
       return Promise.reject(error)
@@ -108,11 +154,9 @@ class ImageRequest {
       }
       return qp
     }
-    const image = sharp(this.originalImageBody)
+    const image = Sharp(this.originalImageBody)
     const metadata = await image.metadata()
     qp.fm = metadata.format.toLowerCase() === 'jpeg' ? 'jpg' : metadata.format.toLowerCase()
     return qp
   }
 }
-
-module.exports = ImageRequest

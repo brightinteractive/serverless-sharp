@@ -1,14 +1,11 @@
-const sharp = require('sharp')
-const fs = require('fs')
-const path = require('path')
-const https = require('https');
-const { spawnSync } = require('child_process')
+import Sharp from 'sharp'
+import * as https from 'https'
+import * as settings from './helpers/settings.js'
+import { ImageRequest } from './ImageRequest.js'
+import * as imageOps from './image-ops/index.js'
+import { UnhandleableImageException } from './errors/UnhandleableImageException.js'
 
-const settings = require('./helpers/settings')
-const ImageRequest = require('./ImageRequest')
-const imageOps = require('./image-ops')
-
-class ImageHandler {
+export class ImageHandler {
   /**
    * @param {ImageRequest} request
    */
@@ -38,14 +35,13 @@ class ImageHandler {
     if (Object.keys(this.request.edits).length) {
       try {
         // We're calling rotate on this immediately in order to ensure metadata for rotation doesn't get lost
-        const pipeline = sharp(originalImageBody).rotate()
+        const pipeline = Sharp(originalImageBody).rotate()
         await this.applyEdits(pipeline, this.request.edits)
         await this.applyOptimizations(pipeline)
         bufferImage = await pipeline.toBuffer()
         format = pipeline.options.formatOut
       } catch (err) {
-        console.error('Unhandlable image encountered', err)
-        bufferImage = Buffer.from(originalImageBody, 'binary')
+        throw new UnhandleableImageException('Unhandlable image encountered: ' + err.message)
       }
     } else {
       // No edits, just return the original
@@ -78,7 +74,8 @@ class ImageHandler {
     return {
       CacheControl: originalImageObject.CacheControl,
       Body: this.shouldReturnEmptyBody(uploadStatusCode) ? "" : bufferImage.toString('base64'),
-      ContentType: contentType
+      ContentType: contentType,
+      ContentLength: Buffer.byteLength(bufferImage, 'base64')
     }
   }
 
@@ -164,9 +161,9 @@ class ImageHandler {
     }
 
     if (autoVals.includes('format')) {
-      // If the browser supports webp, use webp for everything but gifs
-      if (headers && 'Accept' in headers) {
-        if (fm !== 'gif' && headers.Accept.indexOf('image/webp') !== -1) {
+      if (headers && 'Accept' in headers && fm !== 'gif' && fm !== 'svg') {
+        // If the browser supports webp, use webp for everything but gifs and svgs
+        if (headers.Accept.indexOf('image/webp') !== -1) {
           fm = 'webp'
         }
       }
@@ -174,35 +171,21 @@ class ImageHandler {
 
     // adjust quality based on file type
     if (fm === 'jpg' || fm === 'jpeg') {
-      await image.jpeg({
-        quality: quality,
-        trellisQuantisation: true
-      })
-    } else if (fm === 'png') {
-      // ensure that we do not reduce quality if param is not given
       if (autoVals.includes('compress') && quality < 100 && edits.q !== undefined) {
-        const minQuality = quality - 20 > 0 ? quality - 20 : 0
-        const pngQuantOptions = [
-          '--speed', settings.getSetting('PNGQUANT_SPEED'),
-          '--quality', minQuality + '-' + quality,
-          '-' // use stdin
-        ]
-        const binaryLocation = this.findBin('pngquant')
-        if (binaryLocation) {
-          const buffer = await image.png({ compressionLevel: 0 }).toBuffer()
-          const pngquant = spawnSync(binaryLocation, pngQuantOptions, { input: buffer })
-          image = sharp(pngquant.stdout)
-        } else {
-          console.warn('Skipping pngquant - could not find executable!')
-          await image.png({
-            quality: quality
-          })
-        }
+        await image.jpeg({
+          quality: quality,
+          mozjpeg: true
+        })
       } else {
+        await image.flatten({background: {r:255,g:255,b:255}}).jpeg({
+          quality: quality,
+          trellisQuantisation: true
+        })
+      }
+    } else if (fm === 'png') {
         await image.png({
           quality: quality
         })
-      }
     } else if (fm === 'webp') {
       const options = {
         quality: quality
@@ -217,22 +200,4 @@ class ImageHandler {
 
     return image
   }
-
-  /**
-   * TODO: Move me out of here
-   * @param binName
-   * @returns {string}
-   */
-  findBin (binName) {
-    process.env.PATH = process.env.PATH + ':' + process.env.LAMBDA_TASK_ROOT
-    const binPath = path.resolve('./bin/', process.platform, binName)
-
-    if (!fs.existsSync(binPath)) {
-      console.warn('Supposedly could not find binPath, continue anyway.')
-    }
-    return binPath
-  }
 }
-
-// Exports
-module.exports = ImageHandler
