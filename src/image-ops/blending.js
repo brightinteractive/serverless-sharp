@@ -1,8 +1,8 @@
-const axios = require('axios')
+import * as axios from 'axios'
 
-exports.apply = async (image, edits) => {
+export const apply = async (image, edits) => {
   if (edits.blend.processedValue) {
-    await this.blend(image, edits.blend.processedValue)
+    await blend(image, edits.blend.processedValue)
   }
 }
 
@@ -11,7 +11,7 @@ exports.apply = async (image, edits) => {
  * @param {Sharp} image
  * @param {String} url
  */
-exports.blend = async (image, url) => {
+export const blend = async (image, url) => {
   const compositeInput = (await axios({
     url: url,
     responseType: "arraybuffer"

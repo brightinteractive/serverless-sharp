@@ -1,15 +1,11 @@
-const sharp = require('sharp')
-const fs = require('fs')
-const path = require('path')
-const https = require('https');
-const { spawnSync } = require('child_process')
+import Sharp from 'sharp'
+import * as https from 'https'
+import * as settings from './helpers/settings.js'
+import { ImageRequest } from './ImageRequest.js'
+import * as imageOps from './image-ops/index.js'
+import { UnhandleableImageException } from './errors/UnhandleableImageException.js'
 
-const settings = require('./helpers/settings')
-const ImageRequest = require('./ImageRequest')
-const imageOps = require('./image-ops')
-const UnhandleableImageException = require('./errors/UnhandleableImageException')
-
-class ImageHandler {
+export class ImageHandler {
   /**
    * @param {ImageRequest} request
    */
@@ -39,7 +35,7 @@ class ImageHandler {
     if (Object.keys(this.request.edits).length) {
       try {
         // We're calling rotate on this immediately in order to ensure metadata for rotation doesn't get lost
-        const pipeline = sharp(originalImageBody).rotate()
+        const pipeline = Sharp(originalImageBody).rotate()
         await this.applyEdits(pipeline, this.request.edits)
         await this.applyOptimizations(pipeline)
         bufferImage = await pipeline.toBuffer()
@@ -205,6 +201,3 @@ class ImageHandler {
     return image
   }
 }
-
-// Exports
-module.exports = ImageHandler

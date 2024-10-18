@@ -1,7 +1,7 @@
-const size = require('./size')
-const stylize = require('./stylize')
-const settings = require('../helpers/settings')
-const blending = require('./blending')
+import * as size from './size.js'
+import * as stylize from './stylize.js'
+import * as settings from '../helpers/settings.js'
+import * as blending from './blending.js'
 
 const operationsByCategory = {
   size: size.apply,
@@ -16,7 +16,7 @@ const operationsByCategory = {
  * @param edits
  * @return {Promise<void>}
  */
-exports.apply = async (image, edits) => {
+export const apply = async (image, edits) => {
   const editsByCategory = {}
   for (const edit in edits) {
     if (editsByCategory[edits[edit].schema.category] === undefined) {
@@ -32,7 +32,7 @@ exports.apply = async (image, edits) => {
   }
 }
 
-exports.restrictSize = async (image, metadata) => {
+export const restrictSize = async (image, metadata) => {
   const maxImgWidth = settings.getSetting('MAX_IMAGE_WIDTH')
   const maxImgHeight = settings.getSetting('MAX_IMAGE_HEIGHT')
   if ((maxImgWidth && metadata.width > maxImgWidth) || (maxImgHeight && metadata.height > maxImgHeight)) {

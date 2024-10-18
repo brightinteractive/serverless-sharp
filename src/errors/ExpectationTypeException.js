@@ -1,4 +1,4 @@
-module.exports = class ExpectationTypeException extends Error {
+export class ExpectationTypeException extends Error {
   constructor (message) {
     super()
     this.name = 'ExpectationType'

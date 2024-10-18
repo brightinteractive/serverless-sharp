@@ -1,4 +1,4 @@
-module.exports = class UnhandleableImageException extends Error {
+export class UnhandleableImageException extends Error {
   constructor (message) {
     super()
     this.name = 'UnhandleableImageException'

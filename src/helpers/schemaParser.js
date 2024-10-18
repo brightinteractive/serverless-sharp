@@ -1,12 +1,12 @@
-const schema = require('../../data/schema')
-const ExpectationTypeException = require('../errors/ExpectationTypeException')
-const ParsedSchemaItem = require('../helpers/ParsedSchemaItem')
+import { schema } from '../../data/schema.js'
+import { ExpectationTypeException } from '../errors/ExpectationTypeException.js'
+import { ParsedSchemaItem } from '../helpers/ParsedSchemaItem.js'
 
 /**
  * Replaces any aliased keys with its base key
  * @param queryParameters
  */
-exports.replaceAliases = (queryParameters = {}) => {
+export const replaceAliases = (queryParameters = {}) => {
   const aliases = schema.aliases
   Object.keys(aliases).forEach((val) => {
     if (queryParameters[val] !== undefined) {
@@ -22,7 +22,7 @@ exports.replaceAliases = (queryParameters = {}) => {
  * Gets all of the valid schema parameters in an object
  * @param queryParameters
  */
-exports.getSchemaForQueryParams = (queryParameters = {}) => {
+export const getSchemaForQueryParams = (queryParameters = {}) => {
   const params = schema.parameters
   const result = {}
 
@@ -40,7 +40,7 @@ exports.getSchemaForQueryParams = (queryParameters = {}) => {
  * @param {Object} values
  * @return {Object}
  */
-exports.normalizeAndValidateSchema = (schema = {}, values = {}) => {
+export const normalizeAndValidateSchema = (schema = {}, values = {}) => {
   const dependencies = {}
   let expectationValues = {}
 
@@ -64,7 +64,7 @@ exports.normalizeAndValidateSchema = (schema = {}, values = {}) => {
           continue
         }
 
-        result = this.processExpectation(schema[val].expects[i], values[val])
+        result = processExpectation(schema[val].expects[i], values[val])
         if (result.passed) {
           passedExpectation = schema[val].expects[i]
         }
@@ -83,8 +83,8 @@ exports.normalizeAndValidateSchema = (schema = {}, values = {}) => {
   })
 
   // Go back and validate our dependencies now that we've looked at each item
-  expectationValues = this.processDefaults(expectationValues)
-  expectationValues = this.processDependencies(dependencies, expectationValues)
+  expectationValues = processDefaults(expectationValues)
+  expectationValues = processDependencies(dependencies, expectationValues)
 
   // Now we'll merge the rest of the schema's defaults
   return expectationValues
@@ -97,8 +97,8 @@ exports.normalizeAndValidateSchema = (schema = {}, values = {}) => {
  * @param {Object} expectationValues.schema
  * @return {Object}
  */
-exports.processDefaults = (expectationValues) => {
-  const fullSchema = require('../../data/schema').parameters
+export const processDefaults = (expectationValues) => {
+  const fullSchema = schema.parameters
   Object.keys(fullSchema).forEach((val) => {
     if (expectationValues[val] === undefined) {
       // Handle when a default value is available on a schema
@@ -155,7 +155,7 @@ exports.processDefaults = (expectationValues) => {
  * @param schema
  * @param values
  */
-exports.processDependencies = (dependencies, expectationValues) => {
+export const processDependencies = (dependencies, expectationValues) => {
   const passedDependencies = {}
   Object.keys(dependencies).forEach((paramDependency) => {
     passedDependencies[paramDependency] = dependencies[paramDependency]
@@ -210,7 +210,7 @@ exports.processDependencies = (dependencies, expectationValues) => {
  * @param value
  * @returns {Object}
  */
-exports.processExpectation = (expects = {}, value) => {
+export const processExpectation = (expects = {}, value) => {
   const result = {
     passed: false,
     processedValue: null,

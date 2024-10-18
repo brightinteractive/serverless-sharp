@@ -1,4 +1,4 @@
-module.exports = class NotImplementedException extends Error {
+export class NotImplementedException extends Error {
   constructor (args) {
     super(args)
     this.name = 'NotImplemented'

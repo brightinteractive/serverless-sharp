@@ -1,5 +1,6 @@
 defaults: &defaults
-  serviceName: image-handler-test
+  # The service name should be specified in serverless.yml instead
+  # serviceName: image-handler-test
   region: 'us-east-1'
   environment: &defaults.environment
     DEFAULT_QUALITY: 75

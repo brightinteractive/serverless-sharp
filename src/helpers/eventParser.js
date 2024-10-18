@@ -4,7 +4,7 @@
  * @param uri
  * @param requiredPrefix
  */
-exports.parseImageKey = (uri, requiredPrefix = null) => {
+export const parseImageKey = (uri, requiredPrefix = null) => {
   // Decode the image request and return the image key
   // Ensure the path starts with our prefix
   let key = decodeURI(uri)
@@ -26,7 +26,7 @@ exports.parseImageKey = (uri, requiredPrefix = null) => {
  * @returns {string}
  * @private
  */
-exports.buildQueryStringFromObject = (queryStringParameters) => {
+export const buildQueryStringFromObject = (queryStringParameters) => {
   let string = ''
   for (const [k, v] of Object.entries(queryStringParameters)) {
     // Don't hash the security token
@@ -46,7 +46,7 @@ exports.buildQueryStringFromObject = (queryStringParameters) => {
  * @param fullPath
  * @returns {{bucket: null, prefix: string}}
  */
-exports.processSourceBucket = (fullPath) => {
+export const processSourceBucket = (fullPath) => {
   const result = {
     prefix: '',
     bucket: null

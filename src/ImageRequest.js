@@ -1,14 +1,15 @@
-const eventParser = require('./helpers/eventParser')
-const schemaParser = require('./helpers/schemaParser')
-const security = require('./helpers/security')
-const sharp = require('sharp')
-const HashException = require('./errors/HashException')
-const settings = require('./helpers/settings')
-const S3Exception = require('./errors/S3Exception')
-const ImageDownloadException = require('./errors/ImageDownloadException')
-const https = require('https')
+import * as eventParser from './helpers/eventParser.js'
+import * as schemaParser from './helpers/schemaParser.js'
+import * as security from './helpers/security.js'
+import Sharp from 'sharp'
+import { HashException } from './errors/HashException.js'
+import * as settings from './helpers/settings.js'
+import { S3Exception } from './errors/S3Exception.js'
+import { ImageDownloadException } from './errors/ImageDownloadException.js'
+import * as https from 'https'
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3'
 
-class ImageRequest {
+export class ImageRequest {
   constructor (event) {
     this.event = event
     // If the hash isn't set when it should be, we'll throw an error.
@@ -86,13 +87,17 @@ class ImageRequest {
   }
 
   async getOriginalImageFromS3() {
-    const S3 = require('aws-sdk/clients/s3')
-    const s3 = new S3()
-    const imageLocation = { Bucket: this.bucket, Key: decodeURIComponent(this.key) }
-    const request = s3.getObject(imageLocation).promise()
+    const s3 = new S3Client()
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: decodeURIComponent(this.key)
+    })
     try {
-      const originalImage = await request
-      return Promise.resolve(originalImage)
+      const response = await s3.send(command)
+      return {
+        ...response,
+        Body: await response.Body.transformToByteArray()
+      }
     } catch (err) {
       const error = new S3Exception(err.statusCode, err.code, err.message)
       return Promise.reject(error)
@@ -149,11 +154,9 @@ class ImageRequest {
       }
       return qp
     }
-    const image = sharp(this.originalImageBody)
+    const image = Sharp(this.originalImageBody)
     const metadata = await image.metadata()
     qp.fm = metadata.format.toLowerCase() === 'jpeg' ? 'jpg' : metadata.format.toLowerCase()
     return qp
   }
 }
-
-module.exports = ImageRequest

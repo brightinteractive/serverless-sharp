@@ -1,9 +1,9 @@
-const ImageRequest = require('./ImageRequest.js')
-const ImageHandler = require('./ImageHandler.js')
-const security = require('./helpers/security')
-const settings = require('./helpers/settings')
+import { ImageRequest } from './ImageRequest.js'
+import { ImageHandler } from './ImageHandler.js'
+import { shouldSkipRequest } from './helpers/security.js'
+import { getSetting } from './helpers/settings.js'
 
-exports.handler = async (event, context, callback) => {
+export const handler = async (event, context, callback) => {
   const beforeHandle = beforeHandleRequest(event)
 
   if (!beforeHandle.allowed) {
@@ -61,7 +61,7 @@ const getResponseHeaders = (processedRequest, isErr) => {
     'Access-Control-Allow-Credentials': true,
     'Last-Modified': timenow.toString()
   }
-  const cacheControlDefault = settings.getSetting('DEFAULT_CACHE_CONTROL')
+  const cacheControlDefault = getSetting('DEFAULT_CACHE_CONTROL')
   if (processedRequest) {
     if ('CacheControl' in processedRequest && processedRequest.CacheControl !== undefined) {
       headers['Cache-Control'] = processedRequest.CacheControl
@@ -82,7 +82,7 @@ const beforeHandleRequest = (event) => {
   const result = {
     allowed: true
   }
-  if (security.shouldSkipRequest(event.path)) {
+  if (shouldSkipRequest(event.path)) {
     result.allowed = false
     result.response = {
       statusCode: 404,

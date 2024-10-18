@@ -1,6 +1,7 @@
 {
   "name": "serverless-sharp",
   "description": "A Lambda function for performing on-demand image edits and manipulations.",
+  "type": "module",
   "author": {
     "name": "Venveo",
     "url": "https://www.venveo.com",
@@ -20,7 +21,7 @@
     "aws-sdk": "^2.668.0",
     "aws-sdk-mock": "^5.1.0",
     "jest": "^26.0.1",
-    "serverless": "^2.30.1",
+    "serverless": "^3.39.0",
     "sharp": "0.28.0",
     "standard": "^16.0.3"
   }

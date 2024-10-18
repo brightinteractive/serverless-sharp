@@ -1,5 +1,6 @@
-const eventParser = require('./eventParser')
-const settings = require('./settings')
+import * as eventParser from './eventParser.js'
+import * as settings from './settings.js'
+import * as crypto from 'crypto'
 
 /**
  * Computes a hash based on the path, query string params
@@ -8,8 +9,7 @@ const settings = require('./settings')
  * @param {string} securityKey
  * @return {string}
  */
-exports.calculateHash = (path, queryStringParameters, securityKey) => {
-  const crypto = require('crypto')
+export const calculateHash = (path, queryStringParameters, securityKey) => {
 
   // Get the full query (minus the hash parameter)
   const query = eventParser.buildQueryStringFromObject(queryStringParameters)
@@ -45,8 +45,8 @@ function fixedEncodeURIComponent (str) {
  * @param hash
  * @returns {boolean}
  */
-exports.verifyHash = (path, queryStringParameters, hash) => {
-  const parsed = this.calculateHash(path, queryStringParameters, settings.getSetting('SECURITY_KEY'))
+export const verifyHash = (path, queryStringParameters, hash) => {
+  const parsed = calculateHash(path, queryStringParameters, settings.getSetting('SECURITY_KEY'))
   return parsed.toLowerCase() === hash.toLowerCase()
 }
 
@@ -55,7 +55,7 @@ exports.verifyHash = (path, queryStringParameters, hash) => {
  * @param path
  * @return {boolean}
  */
-exports.shouldSkipRequest = (path) => {
+export const shouldSkipRequest = (path) => {
   // Check if the file is explicitly ignored
   if (settings.getSetting('SLS_IGNORE')) {
     const filesToIgnore = settings.getSetting('SLS_IGNORE')

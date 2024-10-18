@@ -1,6 +1,6 @@
-exports.apply = (image, edits) => {
+export const apply = (image, edits) => {
   if (edits.blur) {
-    this.blur(image, edits.blur.processedValue)
+    blur(image, edits.blur.processedValue)
   }
 }
 
@@ -9,7 +9,7 @@ exports.apply = (image, edits) => {
  * @param {Sharp} image
  * @param {number} val
  */
-exports.blur = (image, val) => {
+export const blur = (image, val) => {
   if (val === 0) {
     return
   }
