@@ -23,5 +23,8 @@
     "serverless": "^2.30.1",
     "sharp": "0.28.0",
     "standard": "^16.0.3"
+  },
+  "dependencies": {
+    "buffer-image-size": "^0.6.4"
   }
 }

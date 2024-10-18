@@ -1,16 +1,25 @@
 const axios = require('axios')
 const sharp = require('sharp')
+const sizeOf = require('buffer-image-size')
 
 exports.apply = async (image, edits) => {
   await this.beforeApply(image, edits)
-  const { blend } = edits
-  const blendalign = edits["blend-align"]
-  const blendalpha = edits["blend-alpha"]
-  const blendwidth = edits["blend-w"]
-  const blendheight = edits["blend-h"]
+  const { blend, w, h, fit } = edits
+  const blendAlign = edits["blend-align"]
+  const blendAlpha = edits["blend-alpha"]
+  const blendRatio = edits["blend-ratio"]
+  console.log("RATIO: "+blendRatio)
 
   if (blend.processedValue) {
-    await this.blend(image, blend.processedValue, blendalign.processedValue, blendalpha.processedValue, blendwidth.processedValue, blendheight.processedValue)
+    await this.blend(
+        image,
+        blend.processedValue,
+        blendAlign.processedValue,
+        blendAlpha.processedValue,
+        {width: w.processedValue, height: h.processedValue},
+        fit,
+        blendRatio.processedValue
+    )
   }
 }
 
@@ -20,16 +29,18 @@ exports.apply = async (image, edits) => {
  * @param {String} url
  * @param {String} gravity
  * @param {number} alpha
- * @param {number} width
- * @param {number} height
+ * @param {Object} targetDimensions
+ * @param {String} targetFit
+ * @param {number} ratio
  **/
-exports.blend = async (image, url, gravity, alpha, width, height) => {
+exports.blend = async (image, url, gravity, alpha, targetDimensions, targetFit, ratio) => {
   let compositeImage = (await axios({
     url: url,
     responseType: "arraybuffer"
   })).data;
 
   if (alpha >= 0) {
+    console.log("APPLYING OPACITY TO WATERMARK: "+alpha)
     compositeImage = await sharp(compositeImage).composite(
         [{
           input: Buffer.from([0,0,0,Math.round(alpha*256)]),
@@ -44,8 +55,60 @@ exports.blend = async (image, url, gravity, alpha, width, height) => {
     ).toBuffer()
   }
 
+  if (ratio > 0) {
+    const compositeDimensions = calculateCompositeDimensions(targetDimensions, targetFit, ratio)
+    console.log("ADJUSTING WATERMARK IMAGE TO DIMENSIONS: "+JSON.stringify(compositeDimensions))
+    compositeImage = await sharp(compositeImage).resize(compositeDimensions.width, compositeDimensions.height, {fit: "inside"}).toBuffer()
+  }
+
   image.composite([{input: compositeImage, tile: false, gravity: gravity}])
 }
+
+function calculateCompositeDimensions (image, targetDimensions, targetFit, ratio) {
+  const originalDimensions = sizeOf(image)
+  let resultDimensions
+  if (targetFit) {
+    if (targetFit === "fill") {
+      //https://docs.imgix.com/apis/rendering/size/resize-fit-mode#fill
+      resultDimensions = targetDimensions
+    } else if (targetFit === "max") {
+      //https://docs.imgix.com/apis/rendering/size/resize-fit-mode#max
+      resultDimensions = calculateResultDimensions(originalDimensions, targetDimensions, false)
+    } else if (targetFit === "clip") {
+      //https://docs.imgix.com/apis/rendering/size/resize-fit-mode#clip
+      resultDimensions = calculateResultDimensions(originalDimensions, targetDimensions, true)
+    }
+  } else {
+    resultDimensions = originalDimensions
+  }
+  return {width: resultDimensions.width * ratio, height: resultDimensions.height * ratio}
+}
+
+function calculateResultDimensions(originalDimensions, targetDimensions, allowUpscaling) {
+  const originalAspectRatio = originalDimensions.width / originalDimensions.height;
+  const targetAspectRatio = targetDimensions.width / targetDimensions.height;
+
+  let resultWidth, resultHeight;
+
+  if (originalAspectRatio > targetAspectRatio) {
+    // The original image is wider compared to the target aspect ratio
+    resultWidth = targetDimensions.width;
+    resultHeight = Math.floor(targetDimensions.width / originalAspectRatio);
+  } else {
+    // The original image is taller compared to the target aspect ratio
+    resultHeight = targetDimensions.height;
+    resultWidth = Math.floor(targetDimensions.height * originalAspectRatio);
+  }
+
+  if (!allowUpscaling && (resultWidth > originalDimensions.width || resultHeight > originalDimensions.height))
+  {
+    resultWidth = originalDimensions.width;
+    resultHeight = originalDimensions.height;
+  }
+
+  return { width: resultWidth, height: resultHeight };
+}
+
 
 const alignmentToGravity = new Map([
   ["center", "centre"], ["middle", "centre"], ["center,middle", "centre"], ["middle,center", "centre"],
@@ -60,19 +123,23 @@ const alignmentToGravity = new Map([
 ])
 
 exports.beforeApply = async function (image, edits) {
-  const blendalign = edits["blend-align"]
-  const blendalpha = edits["blend-alpha"]
+  const blendAlign = edits["blend-align"]
+  const blendAlpha = edits["blend-alpha"]
+  const blendRatio = edits["blend-ratio"]
 
-  const alignment = blendalign.processedValue.join(",")
+  const alignment = blendAlign.processedValue.join(",")
   if (alignment) {
     const gravity = alignmentToGravity.get(alignment)
-    blendalign.processedValue = gravity ? gravity : "centre"
+    blendAlign.processedValue = gravity ? gravity : "centre"
   }
 
-  if (blendalpha.processedValue) {
-    const alphaAsDecimal = parseFloat(blendalpha.processedValue) / 100
-    blendalpha.processedValue = alphaAsDecimal
-  } else {
-    blendalpha.processedValue = -1
+  blendAlpha.processedValue = percentageAsDecimal(blendAlpha.processedValue);
+  blendRatio.processedValue = 0.5 //percentageAsDecimal(blendRatio.processedValue);
+}
+
+function percentageAsDecimal(percentageValue) {
+  if (percentageValue) {
+    return parseFloat(percentageValue) / 100
   }
+  return -1
 }
